@@ -12,6 +12,11 @@ import {LinkToken} from "../../test/mocks/LinkToken.sol";
 import {CodeConstants} from "../../script/HelperConfig.s.sol";
 
 contract RaffleTest is Test, CodeConstants {
+    /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
+    event RaffleEnter(address indexed player);
+
     Raffle raffle;
     HelperConfig helperConfig;
 
@@ -76,5 +81,43 @@ contract RaffleTest is Test, CodeConstants {
         // Assert
         address playerRecorded = raffle.getPlayer(0);
         assert(playerRecorded == PLAYER);
+    }
+
+    function testEmitsEventOnEntrance() public {
+        // Arrange
+        vm.prank(PLAYER);
+
+        // Act / Assert
+        /**
+         * Signature:
+         * function expectEmit(bool checkTopic1, bool checkTopic2, bool checkTopic3, bool checkData, address emitter) external;
+         *      topic1:the first indexed param
+         *      topic2:the second indexed param
+         *      topic3:the third indexed param
+         *      checkData: non indexed params
+         *      emitter: the contract address which the event emit from
+         * other signatures : https://book.getfoundry.sh/cheatcodes/expect-emit?highlight=expectEmit#description
+         *  in this case:
+         *      event RaffleEnter(address indexed player);
+         *      topic1 = player
+         *      we check the player address and emitter address
+         */
+        vm.expectEmit(true, false, false, false, address(raffle));
+        emit RaffleEnter(PLAYER);
+        raffle.enterRaffle{value: raffleEntranceFee}();
+    }
+
+    function testDontAllowPlayersToEnterWhileRaffleIsCalculating() public {
+        // Arrange
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: raffleEntranceFee}();
+        vm.warp(block.timestamp + automationUpdateInterval + 1);
+        vm.roll(block.number + 1);
+        raffle.performUpkeep("");
+
+        // Act / Assert
+        vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selector);
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: raffleEntranceFee}();
     }
 }
