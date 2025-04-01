@@ -37,7 +37,7 @@ contract HelperConfig is Script, CodeConstants {
         uint32 callbackGasLimit; // gas limit for Chainlink VRF callback
         address vrfCoordinatorV2_5;
         address link; // LINK token address
-        address account;
+        address account; // the account who create subscription, fund subscription and add consumer with VRF coordinator.
     }
 
     /*//////////////////////////////////////////////////////////////
